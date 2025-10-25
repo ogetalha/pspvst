@@ -1,7 +1,29 @@
 #pragma once
 
+#include <juce_core/juce_core.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
+
+enum class Slope
+{
+    slope12dBPerOctave,
+    slope24dBPerOctave, 
+    slope36dBPerOctave,
+    slope48dBPerOctave
+};
+
+struct ChainSettings {
+    float lowCutFreq{ 20.f };
+    float highCutFreq{ 20000.f };
+    float peakFreq{ 750.f };
+    float peakGainInDecibels{ 0.0f };
+    float peakQuality{ 1.0f };
+    
+    Slope lowCutSlope{ Slope::slope12dBPerOctave };
+    Slope highCutSlope{ Slope::slope12dBPerOctave };
+};
+
+ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
 
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor
@@ -68,6 +90,12 @@ private:
 
 	MonoChain leftChain, rightChain;
 
+    enum ChainPositions
+    {
+        LowCut,
+        Peak,
+        HighCut
+	};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };

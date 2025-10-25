@@ -100,6 +100,18 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 	leftChain.prepare(spec);
 	rightChain.prepare(spec);
 
+	auto chainSettings = getChainSettings(apvts);
+
+    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(
+                                                                                sampleRate,
+                                                                                chainSettings.peakFreq,
+                                                                                chainSettings.peakQuality,
+                                                                                juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels)
+    );
+
+	*leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+    *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+
 
 }
 
@@ -151,6 +163,19 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    auto chainSettings = getChainSettings(apvts);
+
+    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(
+        getSampleRate(),
+        chainSettings.peakFreq,
+        chainSettings.peakQuality,
+        juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels)
+    );
+
+    *leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+    *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+
+
 	juce::dsp::AudioBlock<float> block(buffer);
 
 	auto leftBlock = block.getSingleChannelBlock(0);
@@ -193,6 +218,19 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
     juce::ignoreUnused (data, sizeInBytes);
+}
+
+ChainSettings getChainSettings(juce::AudioProcessorValueTreeState &apvts)
+{  
+    ChainSettings settings;
+    settings.lowCutFreq = apvts.getRawParameterValue("lowcutfreq")->load();
+    settings.highCutFreq = apvts.getRawParameterValue("highcutfreq")->load();
+    settings.peakFreq = apvts.getRawParameterValue("peakfreq")->load();
+    settings.peakGainInDecibels = apvts.getRawParameterValue("peakgain")->load();
+    settings.peakQuality = apvts.getRawParameterValue("peakquality")->load();
+    settings.lowCutSlope = static_cast<Slope>(apvts.getRawParameterValue("lowcutslope")->load());
+    settings.highCutSlope = static_cast<Slope>(apvts.getRawParameterValue("highcutslope")->load());
+    return settings;
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout
