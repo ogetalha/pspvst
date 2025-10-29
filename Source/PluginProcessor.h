@@ -101,55 +101,49 @@ private:
 	using Coefficients = Filter::CoefficientsPtr;
     static void updateCoefficients(Coefficients& old, const Coefficients& replacements);
 
+    template<int Index, typename ChainType, typename CoefficientType>
+    void update(ChainType& chain, const CoefficientType& coefficients)
+    {
+		updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
+		chain.template setBypassed<Index>(false);
+    }
+
+
 	template<typename ChainType, typename CoefficientType>
-    void updateCutFilter(ChainType& leftLowCut, const CoefficientType& cutCoefficients, const Slope& lowCutSlope)
+    void updateCutFilter(ChainType& chain, const CoefficientType& coefficients, const Slope& slope)
     {
 
-        leftLowCut.template setBypassed<0>(true);
-        leftLowCut.template setBypassed<1>(true);
-        leftLowCut.template setBypassed<2>(true);
-        leftLowCut.template setBypassed<3>(true);
+        chain.template setBypassed<0>(true);
+        chain.template setBypassed<1>(true);
+        chain.template setBypassed<2>(true);
+        chain.template setBypassed<3>(true);
 
-        switch (lowCutSlope)
+        switch (slope)
         {
-            case Slope::slope12dBPerOctave:
+            case Slope::slope48dBPerOctave:
             {
-                *leftLowCut.template get<0>().coefficients = *cutCoefficients[0];
-                leftLowCut.template setBypassed<0>(false);
-                break;
+                update<3>(chain, coefficients);
+
+            }
+
+            case Slope::slope36dBPerOctave:
+            {
+                update<2>(chain, coefficients);
+
             }
 
             case Slope::slope24dBPerOctave:
             {
-                *leftLowCut.template get<0>().coefficients = *cutCoefficients[0];
-                *leftLowCut.template get<1>().coefficients = *cutCoefficients[1];
-                leftLowCut.template setBypassed<0>(false);
-                leftLowCut.template setBypassed<1>(false);
-                break;
-            }
-            case Slope::slope36dBPerOctave:
-            {
-                *leftLowCut.template get<0>().coefficients = *cutCoefficients[0];
-                *leftLowCut.template get<1>().coefficients = *cutCoefficients[1];
-                *leftLowCut.template get<2>().coefficients = *cutCoefficients[2];
-                leftLowCut.template setBypassed<0>(false);
-                leftLowCut.template setBypassed<1>(false);
-                leftLowCut.template setBypassed<2>(false);
-                break;
+                update<1>(chain, coefficients);
+
             }
 
-            case Slope::slope48dBPerOctave:
+            case Slope::slope12dBPerOctave:
             {
-                *leftLowCut.template get<0>().coefficients = *cutCoefficients[0];
-                *leftLowCut.template get<1>().coefficients = *cutCoefficients[1];
-                *leftLowCut.template get<2>().coefficients = *cutCoefficients[2];
-                *leftLowCut.template get<3>().coefficients = *cutCoefficients[3];
-                leftLowCut.template setBypassed<0>(false);
-                leftLowCut.template setBypassed<1>(false);
-                leftLowCut.template setBypassed<2>(false);
-                leftLowCut.template setBypassed<3>(false);
-                break;
+                update<0>(chain, coefficients);
             }
+
+
         }
     }
 
