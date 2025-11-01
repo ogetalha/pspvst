@@ -31,7 +31,6 @@
 *.out
 *.app
 
-
 .idea/
 Build/
 build/
@@ -40,3 +39,4 @@ builds/
 .vs/
 out/
 pspstyle_test.filtergraph
+Project Test.rpp
