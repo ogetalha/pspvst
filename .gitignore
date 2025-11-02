@@ -40,3 +40,5 @@ builds/
 out/
 pspstyle_test.filtergraph
 Project Test.rpp
+.gitignore
+CMakeSettings.json

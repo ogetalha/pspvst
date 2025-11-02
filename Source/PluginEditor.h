@@ -1,11 +1,14 @@
 #pragma once
 #include "PluginProcessor.h"
 
-class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor, juce::AudioProcessorParameter::Listener
+class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor,
+    juce::AudioProcessorParameter::Listener,
+	juce::Timer
+                                                    
 {
 public:
     explicit AudioPluginAudioProcessorEditor(AudioPluginAudioProcessor&);
-    ~AudioPluginAudioProcessorEditor() override = default;
+    ~AudioPluginAudioProcessorEditor() override;
 
     void paint(juce::Graphics&) override;
     void resized() override;
@@ -14,8 +17,7 @@ public:
     void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override { }
 
 
-	void timerCallback() override;
-
+	void timerCallback() override; 
 
 
 private:
