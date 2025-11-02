@@ -51,8 +51,69 @@ void updateCoefficients(Coefficients& old, const Coefficients& replacements);
 
 Coefficients makePeakFilter(const ChainSettings& chainSettings, double sampleRate);
 
+using Coefficients = Filter::CoefficientsPtr;
+
+template<int Index, typename ChainType, typename CoefficientType>
+void update(ChainType& chain, const CoefficientType& coefficients)
+{
+    updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
+    chain.template setBypassed<Index>(false);
+}
+
+
+template<typename ChainType, typename CoefficientType>
+void updateCutFilter(ChainType& chain, const CoefficientType& coefficients, const Slope& slope)
+{
+
+    chain.template setBypassed<0>(true);
+    chain.template setBypassed<1>(true);
+    chain.template setBypassed<2>(true);
+    chain.template setBypassed<3>(true);
+
+    switch (slope)
+    {
+    case Slope::slope48dBPerOctave:
+    {
+        update<3>(chain, coefficients);
+
+        }
+
+    case Slope::slope36dBPerOctave:
+    {
+        update<2>(chain, coefficients);
+
+        }
+
+    case Slope::slope24dBPerOctave:
+    {
+        update<1>(chain, coefficients);
+
+        }
+
+    case Slope::slope12dBPerOctave:
+    {
+        update<0>(chain, coefficients);
+
+        }
+    }
+}
+
+inline auto makeLowCutFilter(const ChainSettings& chainSettings, double sampleRate)
+{
+    return juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq,
+                                                                                       sampleRate,
+																					   2 * (static_cast<int>(chainSettings.lowCutSlope) + 1));
+}
+
+inline auto makeHighCutFilter(const ChainSettings& chainSettings, double sampleRate)
+{
+    return juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq,
+                                                                                      sampleRate,
+																					  2 * (static_cast<int>(chainSettings.highCutSlope) + 1));
+}
+
 //==============================================================================
-class AudioPluginAudioProcessor final : public juce::AudioProcessor
+class AudioPluginAudioProcessor : public juce::AudioProcessor
 {
 public:
     //==============================================================================
@@ -104,52 +165,7 @@ private:
 	MonoChain leftChain, rightChain;
 
 	void updatePeakFilter(const ChainSettings& chainSettings);
-	using Coefficients = Filter::CoefficientsPtr;
-
-    template<int Index, typename ChainType, typename CoefficientType>
-    void update(ChainType& chain, const CoefficientType& coefficients)
-    {
-		updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
-		chain.template setBypassed<Index>(false);
-    }
-
-
-	template<typename ChainType, typename CoefficientType>
-    void updateCutFilter(ChainType& chain, const CoefficientType& coefficients, const Slope& slope)
-    {
-
-        chain.template setBypassed<0>(true);
-        chain.template setBypassed<1>(true);
-        chain.template setBypassed<2>(true);
-        chain.template setBypassed<3>(true);
-
-        switch (slope)
-        {
-            case Slope::slope48dBPerOctave:
-            {
-                update<3>(chain, coefficients);
-
-            }
-
-            case Slope::slope36dBPerOctave:
-            {
-                update<2>(chain, coefficients);
-
-            }
-
-            case Slope::slope24dBPerOctave:
-            {
-                update<1>(chain, coefficients);
-
-            }
-
-            case Slope::slope12dBPerOctave:
-            {
-                update<0>(chain, coefficients);
-
-            }
-        }
-    }
+	
 
 	void updateLowCutFilter(const ChainSettings& chainSettings);
 	void updateHighCutFilter(const ChainSettings& chainSettings);
