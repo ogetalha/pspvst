@@ -22,6 +22,7 @@ struct ChainSettings {
     Slope lowCutSlope{ Slope::slope12dBPerOctave };
     Slope highCutSlope{ Slope::slope12dBPerOctave };
 };
+
 ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
 
 using Filter = juce::dsp::IIR::Filter<float>;

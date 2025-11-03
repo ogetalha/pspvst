@@ -1,9 +1,26 @@
 #pragma once
 #include "PluginProcessor.h"
 
-class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor,
-    juce::AudioProcessorParameter::Listener,
+struct ResponseCurveComponent: juce::Component,
+	juce::AudioProcessorParameter::Listener,
 	juce::Timer
+{
+    ResponseCurveComponent(AudioPluginAudioProcessor&);
+    ~ResponseCurveComponent() override;
+    void parameterValueChanged(int parameterIndex, float newValue) override;
+    void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override {}
+    void paint(juce::Graphics&) override;
+
+
+    void timerCallback() override;
+
+private:
+    AudioPluginAudioProcessor& processorRef;
+    juce::Atomic<bool> parametersChanged{ false };
+	MonoChain monoChain;
+};
+
+class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
                                                     
 {
 public:
@@ -13,17 +30,10 @@ public:
     void paint(juce::Graphics&) override;
     void resized() override;
 
-    void parameterValueChanged(int parameterIndex, float newValue) override;
-    void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override { }
-
-
-	void timerCallback() override; 
-
-
 private:
     AudioPluginAudioProcessor& processorRef;
 
-    juce::Atomic<bool> parametersChanged{ false };
+	ResponseCurveComponent responseCurveComponent;
 
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     using ComboAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
@@ -41,8 +51,6 @@ private:
 
     void setKnob(juce::Slider&);
     void setLabel(juce::Label&, const juce::String& text);
-
-    MonoChain monoChain;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)
 };

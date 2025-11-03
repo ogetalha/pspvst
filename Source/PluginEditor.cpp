@@ -1,8 +1,106 @@
 ﻿#include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+
+ResponseCurveComponent::ResponseCurveComponent(AudioPluginAudioProcessor& p) : processorRef(p)
+{
+    for (auto* param : processorRef.getParameters())
+        param->addListener(this);
+
+    startTimerHz(60);
+}
+
+ResponseCurveComponent::~ResponseCurveComponent()
+{
+    for (auto* param : processorRef.getParameters())
+        param->removeListener(this);
+}
+
+void ResponseCurveComponent::parameterValueChanged(int, float)
+{
+    parametersChanged.set(true);
+}
+
+void ResponseCurveComponent::timerCallback()
+{
+    if (parametersChanged.compareAndSetBool(false, true))
+    {
+        auto chainSettings = getChainSettings(processorRef.apvts);
+        auto peakCoefficients = makePeakFilter(chainSettings, processorRef.getSampleRate());
+
+        updateCoefficients(monoChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
+
+        auto lowCutCoefficients = makeLowCutFilter(chainSettings,
+                                                   processorRef.getSampleRate());
+
+        auto highCutCoefficients = makeHighCutFilter(chainSettings,
+                                                     processorRef.getSampleRate());
+
+        updateCutFilter(monoChain.get<ChainPositions::LowCut>(), lowCutCoefficients, chainSettings.lowCutSlope);
+        updateCutFilter(monoChain.get<ChainPositions::HighCut>(), highCutCoefficients, chainSettings.highCutSlope);
+
+
+        repaint();
+    }
+}
+
+void ResponseCurveComponent::paint(juce::Graphics& g)
+{
+
+    auto bounds = getLocalBounds().toFloat();
+
+    g.setColour(juce::Colours::black.withAlpha(0.25f));
+    g.fillRoundedRectangle(bounds, 10.0f);
+    g.setColour(juce::Colours::white.withAlpha(0.3f));
+    g.drawRoundedRectangle(bounds, 10.0f, 1.5f);
+
+
+    auto w = (int)bounds.getWidth();
+    auto& lowcut = monoChain.get<ChainPositions::LowCut>();
+    auto& peak = monoChain.get<ChainPositions::Peak>();
+    auto& highcut = monoChain.get<ChainPositions::HighCut>();
+    auto sampleRate = processorRef.getSampleRate();
+
+    std::vector<double> mags(w, 1.0);
+    for (int i = 0; i < w; ++i)
+    {
+        double mag = 1.f;
+        auto freq = juce::mapToLog10((double)i / (double)w, 20.0, 20000.0);
+
+        if (!monoChain.isBypassed<ChainPositions::Peak>())
+            mag *= peak.coefficients->getMagnitudeForFrequency(freq, sampleRate);
+
+        if (!lowcut.isBypassed<0>()) mag *= lowcut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        if (!lowcut.isBypassed<1>()) mag *= lowcut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        if (!lowcut.isBypassed<2>()) mag *= lowcut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        if (!lowcut.isBypassed<3>()) mag *= lowcut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+
+        if (!highcut.isBypassed<0>()) mag *= highcut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        if (!highcut.isBypassed<1>()) mag *= highcut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        if (!highcut.isBypassed<2>()) mag *= highcut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        if (!highcut.isBypassed<3>()) mag *= highcut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+
+        mags[i] = juce::jlimit(-24.0, 24.0, juce::Decibels::gainToDecibels(mag));
+    }
+
+    juce::Path responseCurve;
+    const double outMin = bounds.getBottom();
+    const double outMax = bounds.getY();
+    auto map = [outMax, outMin](double in) { return juce::jmap(in, -24.0, 24.0, outMin, outMax); };
+
+    responseCurve.startNewSubPath(bounds.getX(), map(mags.front()));
+    for (size_t i = 1; i < mags.size(); ++i)
+        responseCurve.lineTo(bounds.getX() + (float)i, (float)map(mags[i]));
+
+    g.setColour(juce::Colours::white);
+    g.strokePath(responseCurve, juce::PathStrokeType(2.f)); 
+
+    g.setColour(juce::Colours::orange.withAlpha(0.8f));
+    g.drawRoundedRectangle(bounds, 15.f, 2.f);
+}
+
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudioProcessor& p)
-    : AudioProcessorEditor(&p), processorRef(p)
+    : AudioProcessorEditor(&p), processorRef(p), responseCurveComponent(p)
 {
     auto& apvts = processorRef.apvts;
 
@@ -11,9 +109,11 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     setKnob(peakFreqSlider);
     setKnob(peakGainSlider);
     setKnob(peakQualitySlider);
+    
 
     addAndMakeVisible(lowCutSlopeBox);
     addAndMakeVisible(highCutSlopeBox);
+	addAndMakeVisible(responseCurveComponent);
 
     juce::StringArray slopeChoices{ "12 dB/oct", "24 dB/oct", "36 dB/oct", "48 dB/oct" };
     for (int i = 0; i < slopeChoices.size(); ++i)
@@ -39,21 +139,15 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
     addAndMakeVisible(lowCutLabel);
     addAndMakeVisible(highCutLabel);
     addAndMakeVisible(peakFreqLabel);
-    addAndMakeVisible(peakGainLabel);
+    addAndMakeVisible(peakGainLabel);   
     addAndMakeVisible(peakQualityLabel);
 
-    for (auto* param : processorRef.getParameters())
-        param->addListener(this);
+    setSize(800, 600);
 
-    startTimerHz(60);
-    setSize(900, 620);
 }
 
-AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
-{
-    for (auto* param : processorRef.getParameters())
-        param->removeListener(this);
-}
+AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor() = default;
+
 
 void AudioPluginAudioProcessorEditor::setKnob(juce::Slider& s)
 {
@@ -79,7 +173,7 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
     g.setGradientFill(juce::ColourGradient(top, 0, 0, bottom, 0, (float)getHeight(), false));
     g.fillAll();
 
-    juce::Rectangle<float> frameArea = getLocalBounds().toFloat().reduced(30, 20);
+    juce::Rectangle<float> frameArea = getLocalBounds().toFloat().reduced(20, 10);
     g.setColour(juce::Colours::black.withAlpha(0.25f));
     g.fillRoundedRectangle(frameArea, 15.f);
 
@@ -91,65 +185,16 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawFittedText("Inspired by the PlayStation®Portable",
                      0, 95, getWidth(), 30, juce::Justification::centredTop, 1);
 
-    auto responseArea = juce::Rectangle<float>(
-        (float)getWidth() * 0.225f,
-        (float)getHeight() * 0.23f,
-        (float)getWidth() * 0.55f,
-        (float)getHeight() * 0.33f);
-
-    g.setColour(juce::Colours::black.withAlpha(0.25f));
-    g.fillRoundedRectangle(responseArea, 10.0f);
-    g.setColour(juce::Colours::white.withAlpha(0.3f));
-    g.drawRoundedRectangle(responseArea, 10.0f, 1.5f);
-
-    auto w = (int)responseArea.getWidth();
-    auto& lowcut = monoChain.get<ChainPositions::LowCut>();
-    auto& peak = monoChain.get<ChainPositions::Peak>();
-    auto& highcut = monoChain.get<ChainPositions::HighCut>();
-    auto sampleRate = processorRef.getSampleRate();
-
-    std::vector<double> mags(w, 1.0);
-    for (int i = 0; i < w; ++i)
-    {
-        double mag = 1.f;
-        auto freq = juce::mapToLog10((double)i / (double)w, 20.0, 20000.0);
-
-        if (!monoChain.isBypassed<ChainPositions::Peak>())
-            mag *= peak.coefficients->getMagnitudeForFrequency(freq, sampleRate);
-
-        if (!lowcut.isBypassed<0>()) mag *= lowcut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!lowcut.isBypassed<1>()) mag *= lowcut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!lowcut.isBypassed<2>()) mag *= lowcut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!lowcut.isBypassed<3>()) mag *= lowcut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-
-        if (!highcut.isBypassed<0>()) mag *= highcut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!highcut.isBypassed<1>()) mag *= highcut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!highcut.isBypassed<2>()) mag *= highcut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (!highcut.isBypassed<3>()) mag *= highcut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-
-        mags[i] = juce::Decibels::gainToDecibels(mag);
-    }
-
-    juce::Path responseCurve;
-    const double outMin = responseArea.getBottom();
-    const double outMax = responseArea.getY();
-    auto map = [outMax, outMin](double in) { return juce::jmap(in, -24.0, 24.0, outMin, outMax); };
-
-    responseCurve.startNewSubPath(responseArea.getX(), map(mags.front()));
-    for (size_t i = 1; i < mags.size(); ++i)
-        responseCurve.lineTo(responseArea.getX() + (float)i, (float)map(mags[i]));
-
-    g.setColour(juce::Colours::white);
-    g.strokePath(responseCurve, juce::PathStrokeType(2.f));
-
     g.setColour(juce::Colours::orange.withAlpha(0.8f));
-    g.drawRoundedRectangle(frameArea, 15.f, 2.f);
+    g.drawRoundedRectangle(frameArea, 20.f, 3.f);
+
+    
 }
 
 void AudioPluginAudioProcessorEditor::resized()
 {
-    auto area = getLocalBounds().reduced(40);
-    auto headerHeight = 130;
+    auto area = getLocalBounds().reduced(50, 30);
+    auto headerHeight = 110;
     area.removeFromTop(headerHeight);
 
     auto screenHeight = (int)(getHeight() * 0.33f);
@@ -157,6 +202,8 @@ void AudioPluginAudioProcessorEditor::resized()
     auto screenWidth = (int)(totalWidth * 0.55f);
     auto screenX = (totalWidth - screenWidth) / 2;
     juce::Rectangle<int> screenRect(screenX, headerHeight + 20, screenWidth, screenHeight);
+
+    responseCurveComponent.setBounds(screenRect);
 
     int knobSize = 130;
     lowCutSlider.setBounds(screenRect.getX() - knobSize - 20,
@@ -176,9 +223,9 @@ void AudioPluginAudioProcessorEditor::resized()
     auto peakArea = area.withY(screenRect.getBottom() + 60).withHeight(160);
     auto w = peakArea.getWidth() / 3;
 
-    peakFreqSlider.setBounds(peakArea.removeFromLeft(w).reduced(10));
-    peakGainSlider.setBounds(peakArea.removeFromLeft(w).reduced(10));
-    peakQualitySlider.setBounds(peakArea.removeFromLeft(w).reduced(10));
+    peakFreqSlider.setBounds(peakArea.removeFromLeft(w).reduced(9));
+    peakGainSlider.setBounds(peakArea.removeFromLeft(w).reduced(9));
+    peakQualitySlider.setBounds(peakArea.removeFromLeft(w).reduced(9));
 
     auto labelY = peakFreqSlider.getBottom() + 8;
     peakFreqLabel.setBounds(peakFreqSlider.getX(), labelY, peakFreqSlider.getWidth(), 25);
@@ -186,23 +233,4 @@ void AudioPluginAudioProcessorEditor::resized()
     peakQualityLabel.setBounds(peakQualitySlider.getX(), labelY, peakQualitySlider.getWidth(), 25);
 }
 
-void AudioPluginAudioProcessorEditor::parameterValueChanged(int, float)
-{
-    parametersChanged.set(true);
-}
 
-void AudioPluginAudioProcessorEditor::timerCallback()
-{
-    if (parametersChanged.compareAndSetBool(false, true))
-    {
-        auto chainSettings = getChainSettings(processorRef.apvts);
-        auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(
-            processorRef.getSampleRate(),
-            chainSettings.peakFreq,
-            chainSettings.peakQuality,
-            juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
-
-        updateCoefficients(monoChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
-        repaint();
-    }
-}
