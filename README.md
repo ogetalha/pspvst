@@ -1,15 +1,15 @@
+
 # PSPVST — A JUCE-Based Audio Plugin
+
+![alt text](https://github.com/ogetalha/pspvst/main/Images/PluginLogo.png "Plugin Logo")
 
 ## Overview
 
-Think modern audio plugins are too complicated? Want something fresh, yet feel like a blast from the past?
+**PSPVST** is a custom-built audio plugin developed using the **JUCE Framework** and **CMake**.
 
-Me too! That's why I created **PSPVST**.
-
-**PSPVST** is a custom-built audio plugin developed using the **JUCE Framework** and **CMake**.  
 This project was created as a personal exploration into **Digital Signal Processing (DSP)**, **C++ frameworks**, and **cross-platform build systems**, all while combining a passion for **music production** and **software engineering**.
 
-The plugin is **VST3-compatible** featuring a functional three-band equalizer with real-time FFT spectrum analysis. It allows users to visualize and shape their audio signal through low-cut, peak, and high-cut filters with configurable slopes.
+The plugin is VST3-compatible featuring a functional three-band equalizer with real-time FFT spectrum analysis. It allows users to visualize and shape their audio signal through low-cut, peak, and high-cut filters with configurable slopes.
 
 **DISCLAIMER:** While the **visual design and typography** are inspired by the **PlayStation Portable (PSP)** aesthetic, this project has **no affiliation, endorsement, or association with Sony Interactive Entertainment**.
 
@@ -29,6 +29,9 @@ This project was designed as a practical way to deepen understanding of:
 ---
 
 ## Features
+
+![alt text](https://github.com/ogetalha/pspvst/main/Images/Plugin.png "Plugin")
+
 
 ### Signal Processing
 - **Peak Filter** with adjustable frequency, gain, and Q-factor  
@@ -50,7 +53,7 @@ This project was designed as a practical way to deepen understanding of:
 
 - **Framework:** JUCE  
 - **Build System:** CMake (v3.24+)  
-- **Plugin Formats:** VST3, AU, Standalone  
+- **Plugin Formats:** VST3, Standalone  
 - **Language Standard:** C++17  
 - **DSP (Filter/Cut-Filter/FFT):** JUCE `dsp::FFT`  
 - **Parameter Management:** `AudioProcessorValueTreeState`  
