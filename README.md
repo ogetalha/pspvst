@@ -52,9 +52,8 @@ This project was designed as a practical way to deepen understanding of:
 - **Build System:** CMake (v3.24+)  
 - **Plugin Formats:** VST3, AU, Standalone  
 - **Language Standard:** C++17  
-- **FFT Implementation:** JUCE `dsp::FFT`  
+- **DSP (Filter/Cut-Filter/FFT):** JUCE `dsp::FFT`  
 - **Parameter Management:** `AudioProcessorValueTreeState`  
-
 
 ---
 
@@ -63,17 +62,17 @@ This project was designed as a practical way to deepen understanding of:
 You can either **use the included VST3 file** or **build PSPVST from source**.
 
 ### Option 1: Use the Included Plugin
-The repository includes a compiled **VST3 binary** (`PSPVST.vst3`) inside the `build` folder.
+The repository includes a VST3 folder in the root with a compiled **VST3 binary** (`PSPVST.vst3`).
 
-1. Copy `PSPVST.vst3` to your system’s VST3 directory:
+1. Copy the PSPVST.vst3 Folder to your system’s VST3 directory:
    - **Windows:** `C:\Program Files\Common Files\VST3`
    - **macOS:** `/Library/Audio/Plug-Ins/VST3`
+
 2. Open your DAW and perform a plugin rescan.
+
 3. PSPVST should now be available for use.
 
-Or simply add the `build` folder as a custom VST3 path in your DAW settings.
-
-**NOTE**: I've only tested the plugin with Reaper until now. Not sure if it works with other DAWs. Try Reaper if you run into issues with your DAW.
+Or simply add the folder to a custom VST3 path in your DAW settings.
 
 ### Option 2: Build from Source
 
@@ -88,6 +87,8 @@ git clone https://github.com/ogetalha/pspvst.git
 cd path-to-cloned-repo
 cmake -B build -G "your-preferred-generator"
 ```
+
+**NOTE**: I've only tested the plugin with Reaper until now. Not sure if it works with other DAWs. Try Reaper if you run into issues with your DAW.
 
 ## What's Missing?
 

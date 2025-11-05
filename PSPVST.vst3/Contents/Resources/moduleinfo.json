@@ -1,0 +1,46 @@
+{
+  "Name": "PSPVST",
+  "Version": "0.0.1",
+  "Factory Info": {
+    "Vendor": "ogetalha",
+    "URL": "",
+    "E-Mail": "",
+    "Flags": {
+      "Unicode": true,
+      "Classes Discardable": false,
+      "Component Non Discardable": false,
+    },
+  },
+  "Classes": [
+    {
+      "CID": "ABCDEF019182FAEB5461703152656730",
+      "Category": "Audio Module Class",
+      "Name": "PSPVST",
+      "Vendor": "ogetalha",
+      "Version": "0.0.1",
+      "SDKVersion": "VST 3.7.12",
+      "Sub Categories": [
+        "Fx",
+      ],
+      "Class Flags": 0,
+      "Cardinality": 2147483647,
+      "Snapshots": [
+      ],
+    },
+    {
+      "CID": "ABCDEF011234ABCD5461703152656730",
+      "Category": "Component Controller Class",
+      "Name": "PSPVST",
+      "Vendor": "ogetalha",
+      "Version": "0.0.1",
+      "SDKVersion": "VST 3.7.12",
+      "Sub Categories": [
+        "Fx",
+      ],
+      "Class Flags": 0,
+      "Cardinality": 2147483647,
+      "Snapshots": [
+      ],
+    },
+  ],
+}
