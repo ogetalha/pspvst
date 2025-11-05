@@ -1,7 +1,7 @@
 
 # PSPVST — A JUCE-Based Audio Plugin
 
-![alt text](https://github.com/ogetalha/pspvst/main/Images/PluginLogo.png "Plugin Logo")
+![alt text](Images/PluginLogo.png "Plugin Logo")
 
 ## Overview
 
@@ -30,7 +30,7 @@ This project was designed as a practical way to deepen understanding of:
 
 ## Features
 
-![alt text](https://github.com/ogetalha/pspvst/main/Images/Plugin.png "Plugin")
+![alt text](Images/Plugin.png "Plugin")
 
 
 ### Signal Processing
