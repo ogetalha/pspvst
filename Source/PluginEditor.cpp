@@ -88,8 +88,13 @@ void ResponseCurveComponent::updateResponseCurve()
 void ResponseCurveComponent::paint(juce::Graphics& g)
 {
     using namespace juce;
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll(Colours::black);
+    juce::ColourGradient gradient(
+        juce::Colour::fromRGB(40, 40, 40), 0, 0,         // top
+        juce::Colour::fromRGB(15, 15, 15), 0, (float)getHeight(), false
+    );
+    g.setGradientFill(gradient);
+    g.fillAll();
+
 
     drawBackgroundGrid(g);
 
@@ -100,13 +105,13 @@ void ResponseCurveComponent::paint(juce::Graphics& g)
         auto leftChannelFFTPath = leftPathProducer.getPath();
         leftChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY()));
 
-        g.setColour(Colour(97u, 18u, 167u)); //purple-
-        g.strokePath(leftChannelFFTPath, PathStrokeType(1.f));
+        g.setColour(Colour(120, 180, 255)); 
+        g.strokePath(leftChannelFFTPath, PathStrokeType(1.5f));
 
         auto rightChannelFFTPath = rightPathProducer.getPath();
         rightChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY()));
 
-        g.setColour(Colour(215u, 201u, 134u));
+        g.setColour(Colour(160, 255, 200));
         g.strokePath(rightChannelFFTPath, PathStrokeType(1.f));
     }
 
@@ -438,7 +443,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(AudioPluginAudi
 
     splashScreen.toFront(true);
 
-    setSize(1000, 600);
+    setSize(800, 600);
 
 }
 
@@ -500,7 +505,7 @@ void AudioPluginAudioProcessorEditor::resized()
     auto totalWidth = getWidth();
     auto screenWidth = (int)(totalWidth * 0.55f);
     auto screenX = (totalWidth - screenWidth) / 2;
-    juce::Rectangle<int> screenRect(screenX, headerHeight + 20, screenWidth, screenHeight);
+    juce::Rectangle<int> screenRect(screenX, headerHeight + 60, screenWidth, screenHeight);
 
     responseCurveComponent.setBounds(screenRect);
     splashScreen.setBounds(getLocalBounds());
@@ -518,15 +523,15 @@ void AudioPluginAudioProcessorEditor::resized()
     lowCutLabel.setBounds(lowCutSlider.getX(), lowCutSlider.getBottom() + 5, knobSize, 25);
     highCutLabel.setBounds(highCutSlider.getX(), highCutSlider.getBottom() + 5, knobSize, 25);
 
-    lowCutSlopeBox.setBounds(lowCutSlider.getX(), lowCutLabel.getBottom() + 5, knobSize, 25);
-    highCutSlopeBox.setBounds(highCutSlider.getX(), highCutLabel.getBottom() + 5, knobSize, 25);
+    lowCutSlopeBox.setBounds(lowCutSlider.getX(), lowCutLabel.getBottom() + 5, knobSize, 20);
+    highCutSlopeBox.setBounds(highCutSlider.getX(), highCutLabel.getBottom() + 5, knobSize, 20);
 
-    auto peakArea = area.withY(screenRect.getBottom() + 60).withHeight(160);
+    auto peakArea = area.withY(screenRect.getBottom() + 60).withHeight(120);
     auto w = peakArea.getWidth() / 3;
 
-    peakFreqSlider.setBounds(peakArea.removeFromLeft(w).reduced(9));
-    peakGainSlider.setBounds(peakArea.removeFromLeft(w).reduced(9));
-    peakQualitySlider.setBounds(peakArea.removeFromLeft(w).reduced(9));
+    peakFreqSlider.setBounds(peakArea.removeFromLeft(w).reduced(10));
+    peakGainSlider.setBounds(peakArea.removeFromLeft(w).reduced(10));
+    peakQualitySlider.setBounds(peakArea.removeFromLeft(w).reduced(10));
 
     auto labelY = peakFreqSlider.getBottom() + 8;
     peakFreqLabel.setBounds(peakFreqSlider.getX(), labelY, peakFreqSlider.getWidth(), 25);

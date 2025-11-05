@@ -36,9 +36,9 @@ set(SourceFiles
         Source/PluginProcessor.h
 )
 
-# Change these to your own preferences
+# Change these to your own preferences`
 juce_add_plugin(${PROJECT_NAME}
-        COMPANY_NAME 
+        COMPANY_NAME "ogetalha"
         IS_SYNTH FALSE
         NEEDS_MIDI_INPUT FALSE
         NEEDS_MIDI_OUTPUT FALSE
